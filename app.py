@@ -7,6 +7,74 @@ import duckdb
 import sqlparse
 from dotenv import load_dotenv
 from openai import OpenAI
+st.set_page_config(
+    page_title="智能数据分析 Agent",
+    page_icon="📊",
+    layout="wide"
+)
+st.markdown("""
+<style>
+/* 页面整体 */
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    max-width: 1200px;
+}
+
+/* 顶部 Hero 区域 */
+.hero {
+    padding: 28px 32px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
+    color: white;
+    margin-bottom: 28px;
+    box-shadow: 0 12px 30px rgba(37, 99, 235, 0.18);
+}
+
+.hero h1 {
+    font-size: 34px;
+    margin-bottom: 8px;
+}
+
+.hero p {
+    font-size: 17px;
+    opacity: 0.95;
+    margin-bottom: 0;
+}
+
+/* 功能标签 */
+.badge {
+    display: inline-block;
+    padding: 6px 12px;
+    margin-right: 8px;
+    margin-top: 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    color: white;
+    font-size: 14px;
+}
+
+/* 卡片风格 */
+.card {
+    padding: 20px;
+    border-radius: 18px;
+    background: white;
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+    margin-bottom: 18px;
+}
+
+/* 小标题 */
+h2, h3 {
+    color: #0F172A;
+}
+
+/* 隐藏 Streamlit 默认 footer */
+footer {
+    visibility: hidden;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # =========================
 # 1. 读取 .env 文件里的配置
@@ -28,34 +96,48 @@ def get_secret(name, default=None):
 api_key = get_secret("DEEPSEEK_API_KEY")
 model_name = get_secret("MODEL_NAME", "deepseek-chat")
 
-if api_key:
-    client = OpenAI(
-        api_key=api_key,
-        base_url="https://api.deepseek.com"
-    )
-else:
-    client = None
+client = OpenAI(
+    api_key=api_key,
+    base_url="https://api.deepseek.com"
+)
 
 
 # =========================
 # 2. 页面基础信息
 # =========================
 
-st.title("智能数据分析助手")
-
-st.write("上传 CSV 文件，输入中文数据问题，系统会调用 DeepSeek 自动生成 SQL、查询数据，并输出分析结论。")
-
+st.markdown("""
+<div class="hero">
+    <h1>📊 智能数据分析 Agent</h1>
+    <p>上传 CSV / Excel 文件，用中文提问，系统自动生成 SQL、图表和分析报告。</p>
+    <span class="badge">自然语言问数</span>
+    <span class="badge">SQL 自动生成</span>
+    <span class="badge">数据可视化</span>
+    <span class="badge">自动报告</span>
+</div>
+""", unsafe_allow_html=True)
 
 # =========================
 # 3. 上传 CSV 文件
 # =========================
 
-st.subheader("上传数据文件")
+with st.sidebar:
+    st.markdown("## ⚙️ 数据设置")
 
-uploaded_file = st.file_uploader(
-    "请上传 CSV 或 Excel 文件。如果不上传，则默认使用 data/sales.csv 示例数据。",
-    type=["csv", "xlsx", "xls"]
-)
+    uploaded_file = st.file_uploader(
+        "上传 CSV 或 Excel 文件",
+        type=["csv", "xlsx", "xls"]
+    )
+
+    st.markdown("---")
+    st.markdown("## 💡 示例问题")
+    st.markdown("""
+    - 各渠道 GMV 排名怎么样？
+    - 哪个渠道退款率最高？
+    - 按地区统计销售额和转化率
+    - 按日期统计销售额趋势
+    - 生成一份数据分析报告
+    """)
 
 
 def read_uploaded_file(uploaded_file):
@@ -119,18 +201,16 @@ else:
     data_source = "默认示例数据：data/sales.csv"
 
 
-st.info(f"当前数据来源：{data_source}")
+st.success(f"✅ 当前数据来源：{data_source}")
 
 
 # =========================
 # 4. 展示原始数据
 # =========================
 
-st.subheader("原始数据预览")
-
-st.write(f"数据共有 {df.shape[0]} 行，{df.shape[1]} 列。")
-
-st.dataframe(df.head(100), use_container_width=True)
+with st.expander("📄 查看原始数据预览", expanded=False):
+    st.write(f"数据共有 {df.shape[0]} 行，{df.shape[1]} 列。")
+    st.dataframe(df.head(100), use_container_width=True)
 
 
 # =========================
@@ -446,10 +526,16 @@ def analyze_result(question: str, sql: str, result_text: str) -> str:
 
 st.subheader("请输入你的数据问题")
 
+st.markdown('<div class="card">', unsafe_allow_html=True)
+
+st.subheader("💬 智能问数")
+
 question = st.text_input(
-    "例如：各渠道 GMV 排名怎么样？哪个地区销售额最高？按日期统计趋势？",
-    placeholder="请输入你的问题"
+    "请输入你的数据问题",
+    placeholder="例如：各渠道 GMV 排名怎么样？"
 )
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 if st.button("开始分析"):
 
