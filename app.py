@@ -14,13 +14,27 @@ from openai import OpenAI
 
 load_dotenv()
 
-api_key = os.getenv("DEEPSEEK_API_KEY")
-model_name = os.getenv("MODEL_NAME", "deepseek-chat")
+def get_secret(name, default=None):
+    value = os.getenv(name)
+    if value:
+        return value
 
-client = OpenAI(
-    api_key=api_key,
-    base_url="https://api.deepseek.com"
-)
+    try:
+        return st.secrets[name]
+    except Exception:
+        return default
+
+
+api_key = get_secret("DEEPSEEK_API_KEY")
+model_name = get_secret("MODEL_NAME", "deepseek-chat")
+
+if api_key:
+    client = OpenAI(
+        api_key=api_key,
+        base_url="https://api.deepseek.com"
+    )
+else:
+    client = None
 
 
 # =========================
